@@ -49,7 +49,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
         SimpleResponse response = new SimpleResponse();
         response.setMaxAge(0);
-        response.setStatus(404);
+        response.setStatus(200);
         response.setContentType("application/json");
         response.setContent(json.toString(3));
 
