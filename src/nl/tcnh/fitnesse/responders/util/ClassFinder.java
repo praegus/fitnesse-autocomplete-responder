@@ -27,7 +27,6 @@ public class ClassFinder {
 
     public static List<Class> getClasses(String packageName, boolean recursive)
             throws ClassNotFoundException, IOException {
-        System.out.println("Getting classes for: " + packageName);
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         assert classLoader != null;
@@ -37,12 +36,10 @@ public class ClassFinder {
 
         while (resources.hasMoreElements()) {
             URL resource = (URL) resources.nextElement();
-            System.out.println("resource: " + resource.getPath());
             dirs.add(new File(resource.getFile()));
         }
         List<Class> classes = new ArrayList<>();
         for (File directory : dirs) {
-            System.out.println("adding classes for: " + directory.getPath());
             classes.addAll(findClasses(directory, packageName, recursive));
         }
         return classes;
@@ -60,7 +57,6 @@ public class ClassFinder {
         List<Class> classes = new ArrayList<>();
         if (!directory.exists()) {
             if (directory.getPath().contains(".jar")) {
-                System.out.println("Found a JAR: " + directory.getPath());
                 String jarFile = directory.getPath().split("!")[0].replace("file:\\", "");
                 classes.addAll(getClassesFromJar(jarFile, packageName));
             }
@@ -94,21 +90,20 @@ public class ClassFinder {
                 if (je.isDirectory() || !je.getName().endsWith(".class") || je.getName().contains("$")) {
                     continue;
                 }
-                System.out.println("Class in jar: " + je.getName());
                 String className = je.getName().substring(0, je.getName().length() - 6);
                 className = className.replace('/', '.');
                 try {
+                    if(className.contains(pkg)) {
                     Class c = cl.loadClass(className);
-                    if(c.getName().contains(pkg)) {
-                        jarClasses.add(c);
+                    jarClasses.add(c);
                     }
                 } catch (ClassNotFoundException ex) {
-                    System.err.println(ex.getMessage());
+                    System.err.println("Class not found: " + ex.getMessage());
                 }
             }
 
         } catch (IOException e) {
-            System.err.println(e);
+            System.err.println("IOException: " + e);
         }
         return jarClasses;
     }

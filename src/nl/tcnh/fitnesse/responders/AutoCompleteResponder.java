@@ -35,8 +35,8 @@ import org.json.JSONObject;
 public class AutoCompleteResponder extends WikiPageResponder {
 
     private JSONObject json = new JSONObject();
-    private JSONObject jclasses = new JSONObject();
-    private JSONArray jscenarios = new JSONArray();
+    private JSONObject classes = new JSONObject();
+    private JSONArray scenarios = new JSONArray();
     private List<String> packages = new ArrayList<>();
 
 
@@ -79,29 +79,27 @@ public class AutoCompleteResponder extends WikiPageResponder {
         }
 
         addClassesToAutocopleteList();
-        json.put("classes", jclasses);
-        json.put("scenarios", jscenarios);
+        json.put("classes", classes);
+        json.put("scenarios", scenarios);
 
     }
 
     private void addClassesToAutocopleteList() {
         for (String pkg : packages) {
-            System.out.println("Get package info for: " + pkg);
-            List<Class> classes = new ArrayList<>();
+            List<Class> classList = new ArrayList<>();
 
             try {
-                classes.addAll(ClassFinder.getClasses(pkg, false));
+                classList.addAll(ClassFinder.getClasses(pkg, false));
             } catch (Exception e) {
-                System.err.println(e.getMessage());
+                System.err.println("Exception for package: " + pkg + " - " + e.getMessage());
             }
 
-            //output += pkg + "<BR/>";
-            for (Class klass : classes) {
+            for (Class klass : classList) {
                 JSONObject thisClass = new JSONObject();
                 thisClass.put("qualifiedName", klass.getName());
                 thisClass.put("readableName", splitCamelCase(klass.getSimpleName()));
                 thisClass.put("availableMethods", getMethods(klass));
-                jclasses.put(klass.getSimpleName(),thisClass);
+                classes.put(klass.getSimpleName(),thisClass);
             }
         }
     }
@@ -123,7 +121,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 cMethods.put(thisMethod);
             }
         } catch (NoClassDefFoundError err) {
-            System.err.println(err.getMessage());
+            System.err.println("NoClassDefFoundError: " + err.getMessage());
         }
         return cMethods;
     }
@@ -141,9 +139,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
     private void addScenario(Table t) {
         String scenarioName = "";
-        String params = "";
-
-        //elke oneven cell toevoegen aan scenarioname, even cellen aan params
 
         JSONObject thisScenario = new JSONObject();
         JSONArray parameters = new JSONArray();
@@ -158,7 +153,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
         thisScenario.put("name", scenarioName);
         thisScenario.put("parameters", parameters);
-        jscenarios.put(thisScenario);
+        scenarios.put(thisScenario);
     }
 
     private void setClassPathsForPage(WikiPage page) {
@@ -172,7 +167,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
     private static void addToClassPath(File file) {
         try {
-            System.out.println("Adding: " + file.getPath() + " to CP");
             URL url = file.toURI().toURL();
             URLClassLoader classLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
             Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
