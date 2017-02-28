@@ -1,4 +1,4 @@
-package nl.tcnh.fitnesse.responders.util;
+package com.github.tcnh.fitnesse.responders.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,15 +11,18 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * Class to find classes by package, from fileSystem or JAR Based on code from https://dzone.com/articles/get-all-classes-within-package and
+ * Class to find classes by package, from fileSystem or JAR Based on code from:
+ * https://dzone.com/articles/get-all-classes-within-package and
  * http://stackoverflow.com/questions/11016092/how-to-load-classes-at-runtime-from-a-folder-or-jar *
  */
+
 public class ClassFinder {
 
     /**
      * Scans all classes accessible from the context class loader which belong to the given package and subpackages.
      *
      * @param packageName The base package
+     * @param recursive Toggles searching through subfolders on classpath.
      * @return The classes
      * @throws ClassNotFoundException
      * @throws IOException
@@ -50,10 +53,11 @@ public class ClassFinder {
      *
      * @param directory   The base directory
      * @param packageName The package name for classes found inside the base directory
+     * @param recursive   Toggles whether to search through subfolders
      * @return The classes
      * @throws ClassNotFoundException
      */
-    public static List<Class> findClasses(File directory, String packageName, boolean recursive) throws ClassNotFoundException {
+    private static List<Class> findClasses(File directory, String packageName, boolean recursive) throws ClassNotFoundException {
         List<Class> classes = new ArrayList<>();
         if (!directory.exists()) {
             if (directory.getPath().contains(".jar")) {
@@ -68,7 +72,7 @@ public class ClassFinder {
             if (file.isDirectory()) {
                 if (recursive) {
                     assert !file.getName().contains(".");
-                    classes.addAll(findClasses(file, packageName + "." + file.getName(), recursive));
+                    classes.addAll(findClasses(file, packageName + "." + file.getName(), true));
                 }
             } else if (file.getName().endsWith(".class") && !file.getName().contains("$")) {
                 classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));

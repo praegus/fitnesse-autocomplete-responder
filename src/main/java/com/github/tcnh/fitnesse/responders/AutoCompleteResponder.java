@@ -1,6 +1,7 @@
-package nl.tcnh.fitnesse.responders;
+package com.github.tcnh.fitnesse.responders;
 
 
+import com.github.tcnh.fitnesse.responders.util.ClassFinder;
 import fitnesse.FitNesseContext;
 import fitnesse.http.Request;
 import fitnesse.http.Response;
@@ -12,7 +13,6 @@ import fitnesse.testsystems.slim.HtmlTableScanner;
 import fitnesse.testsystems.slim.Table;
 import fitnesse.testsystems.slim.TableScanner;
 import fitnesse.wiki.WikiPage;
-import nl.tcnh.fitnesse.responders.util.ClassFinder;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -20,6 +20,8 @@ import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -38,6 +40,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private JSONObject classes = new JSONObject();
     private JSONArray scenarios = new JSONArray();
     private List<String> packages = new ArrayList<>();
+    private JSONArray variables = new JSONArray();
 
 
     @Override
@@ -56,7 +59,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
         return response;
 
     }
-
 
     private void getAutoCompleteDataFromPage(FitNesseContext context, WikiPage page) {
         TableScanner scanner = new HtmlTableScanner(makeHtml(context, page));
@@ -78,13 +80,23 @@ public class AutoCompleteResponder extends WikiPageResponder {
             }
         }
 
-        addClassesToAutocopleteList();
+        addClassesToAutocompleteList();
+        getVariablesInScope(context, page);
         json.put("classes", classes);
         json.put("scenarios", scenarios);
+        json.put("variables", variables);
 
     }
 
-    private void addClassesToAutocopleteList() {
+    private void getVariablesInScope(FitNesseContext context, WikiPage page) {
+        String html = makeHtml(context, page);
+        Matcher m = Pattern.compile("(\\$[^\\s]+)=").matcher(html);
+        while (m.find()) {
+            variables.put(m.group(1));
+        }
+    }
+
+    private void addClassesToAutocompleteList() {
         for (String pkg : packages) {
             List<Class> classList = new ArrayList<>();
 
