@@ -4,7 +4,7 @@
 
     <groupId>com.github.tcnh</groupId>
     <artifactId>fitnesse-autocomplete-responder</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <url>https://github.com/tcnh/FitNesseAutocompleteResponder</url>
     <name>AutoComplete responder for FitNesse</name>
     <description>Returns context-aware json with fixture methods, scenario's and slim symbols in scope</description>
@@ -31,7 +31,7 @@
         <connection>scm:git:git@github.com:tcnh/FitNesseAutocompleteResponder.git</connection>
         <url>https://github.com/tcnh/FitNesseAutocompleteResponder.git</url>
         <developerConnection>scm:git:git@github.com:tcnh/FitNesseAutocompleteResponder.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>fitnesse-autocomplete-responder-1.0.1</tag>
   </scm>
     <dependencies>
         <dependency>
