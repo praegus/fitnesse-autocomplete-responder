@@ -16,7 +16,6 @@ import fitnesse.wiki.WikiPage;
 
 import java.io.File;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
@@ -67,9 +66,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
             switch (t.getCellContents(0, 0).toLowerCase()) {
                 case "import":
                     addPackage(t);
-                    break;
-                case "library":
-                    addLibraryFixture(t);
                     break;
                 case "scenario":
                     addScenario(t);
@@ -123,11 +119,13 @@ public class AutoCompleteResponder extends WikiPageResponder {
             for (Method method : methods) {
                 JSONObject thisMethod = new JSONObject();
                 thisMethod.put("name", splitCamelCase(method.getName()));
-                if (method.getParameters().length > 0) {
+                Class<?>[] parameters = method.getParameterTypes();
+                if (parameters.length > 0) {
                     JSONArray params = new JSONArray();
-                    for (Parameter param : method.getParameters()) {
-                        params.put(param.getType().getSimpleName());
+                    for(Class<?> param : parameters) {
+                        params.put(param.getSimpleName());
                     }
+
                     thisMethod.put("parameters", params);
                 }
                 cMethods.put(thisMethod);
@@ -138,10 +136,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
         return cMethods;
     }
 
-    private void addLibraryFixture(Table t) {
-        //elke rij (behalve header) toevoegen aan classes
-        //TODO: Implement
-    }
 
     private void addPackage(Table t) {
         for (int row = 1; row < t.getRowCount(); row++) {

@@ -38,6 +38,7 @@
             <groupId>org.fitnesse</groupId>
             <artifactId>fitnesse</artifactId>
             <version>20161106</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <build>
