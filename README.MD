@@ -5,3 +5,7 @@ Also returns scenario's on page if these are present. Scenario's are de-camelcas
 
 This json should be usable as a basis for context-aware autocompletion in the wiki editor.
 
+When the jar is in your fitnesse plugins directory, add `Responders=autoComplete:com.github.tcnh.fitnesse.responders.AutoCompleteResponder` to your plugins.properties file.
+
+For more details on usage and an implementation: see the readme in [Bootstrap-plus-theme repository](https://github.com/tcnh/fitnesse-bootstrap-plus-theme)
+
