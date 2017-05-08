@@ -178,7 +178,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private void addPackage(Table t) {
         for (int row = 1; row < t.getRowCount(); row++) {
             packages.add(t.getCellContents(0, row));
-        }
+    }
     }
 
     private void addScenario(Table t) {
@@ -187,8 +187,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
         String insertText = "|";
         JSONObject thisScenario = new JSONObject();
         JSONArray parameters = new JSONArray();
-
-        for (int col = 1; col < t.getColumnCountInRow(0); col++) {
+       for (int col = 1; col < t.getColumnCountInRow(0); col++) {
             insertText += " " + t.getCellContents(col, 0) + " |";
             if ((col % 2) != 0) {
                 scenarioName += t.getCellContents(col, 0) + " ";
@@ -198,7 +197,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
         }
 
         thisScenario.put("name", scenarioName);
-        thisScenario.put("library", getLibraryForScenario(t));
         thisScenario.put("wikiText", insertText.substring(2));
         thisScenario.put("insertText", insertText);
         thisScenario.put("parameters", parameters);
@@ -235,28 +233,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
         return html;
     }
 
-    private String getLibraryForScenario(Table scenario) {
-        WikiTestPage testPage = new WikiTestPage(page);
-        List<WikiPage> scenarioLibraries = testPage.getScenarioLibraries();
-        if (scenarioLibraries.size() == 1) {
-            return scenarioLibraries.get(0).getName();
-        }
-        for (WikiPage library : scenarioLibraries) {
-
-            TableScanner scanner = new HtmlTableScanner(makeHtml(context, library));
-
-            for (int i = 0; i < scanner.getTableCount(); i++) {
-
-                Table t = scanner.getTable(i);
-
-                if(t.toString().equals(scenario.toString())){
-                    return library.getName();
-                }
-            }
-
-        }
-        return "lib not found";
-    }
 
     private void setClassPathsForPage() {
         WikiTestPage testPage = new WikiTestPage(page);
