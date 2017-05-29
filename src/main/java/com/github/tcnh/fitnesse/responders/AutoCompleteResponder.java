@@ -36,7 +36,7 @@ import org.json.JSONObject;
 public class AutoCompleteResponder extends WikiPageResponder {
 
     private JSONObject json = new JSONObject();
-    private JSONObject classes = new JSONObject();
+    private JSONArray classes = new JSONArray();
     private JSONArray scenarios = new JSONArray();
     private List<String> packages = new ArrayList<>();
     private JSONArray variables = new JSONArray();
@@ -109,7 +109,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 thisClass.put("qualifiedName", klass.getName());
                 thisClass.put("readableName", splitCamelCase(klass.getSimpleName()));
                 thisClass.put("availableMethods", getMethods(klass));
-                classes.put(klass.getSimpleName(),thisClass);
+                classes.put(thisClass);
             }
         }
     }
