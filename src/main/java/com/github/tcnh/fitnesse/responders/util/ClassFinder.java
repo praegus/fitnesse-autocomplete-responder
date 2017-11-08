@@ -4,9 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -57,11 +55,13 @@ public class ClassFinder {
      * @return The classes
      * @throws ClassNotFoundException
      */
-    private static List<Class> findClasses(File directory, String packageName, boolean recursive) throws ClassNotFoundException {
-        List<Class> classes = new ArrayList<>();
+    private static Set<Class> findClasses(File directory, String packageName, boolean recursive) throws ClassNotFoundException {
+        Set<Class> classes = new HashSet<>();
         if (!directory.exists()) {
             if (directory.getPath().contains(".jar")) {
                 String jarFile = directory.getPath().split("!")[0].replace("file:\\", "");
+                jarFile = jarFile.replace("file:", "");
+                System.out.println("Adding jar: " + jarFile);
                 classes.addAll(getClassesFromJar(jarFile, packageName));
             }
             return classes;

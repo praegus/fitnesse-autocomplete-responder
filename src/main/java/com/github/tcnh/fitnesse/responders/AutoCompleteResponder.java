@@ -38,7 +38,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private JSONObject json = new JSONObject();
     private JSONArray classes = new JSONArray();
     private JSONArray scenarios = new JSONArray();
-    private List<String> packages = new ArrayList<>();
+    private Set<String> packages = new HashSet<>();
     private JSONArray variables = new JSONArray();
     private WikiPage page;
     private FitNesseContext context;
@@ -96,7 +96,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
     private void addClassesToAutocompleteList() {
         for (String pkg : packages) {
-            List<Class> classList = new ArrayList<>();
+            Set<Class> classList = new HashSet<>();
 
             try {
                 classList.addAll(ClassFinder.getClasses(pkg, false));
@@ -183,18 +183,20 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
     private void addScenario(Table t) {
 
-        String scenarioName = "";
-        String insertText = "|";
-        JSONObject thisScenario = new JSONObject();
-        JSONArray parameters = new JSONArray();
+       String scenarioName = "";
+       String insertText = "|";
+       JSONObject thisScenario = new JSONObject();
+       JSONArray parameters = new JSONArray();
+       String scenarioType = t.getCellContents(0, 0).toLowerCase();
+
        for (int col = 1; col < t.getColumnCountInRow(0); col++) {
-            insertText += " " + t.getCellContents(col, 0) + " |";
-            if ((col % 2) != 0) {
-                scenarioName += t.getCellContents(col, 0) + " ";
-            } else {
-                parameters.put(t.getCellContents(col, 0));
-            }
-        }
+           insertText += " " + t.getCellContents(col, 0) + " |";
+           if ((col % 2) != 0) {
+               scenarioName += t.getCellContents(col, 0) + " ";
+           } else {
+               parameters.put(t.getCellContents(col, 0));
+           }
+       }
 
         thisScenario.put("name", scenarioName);
         thisScenario.put("wikiText", insertText.substring(2));
