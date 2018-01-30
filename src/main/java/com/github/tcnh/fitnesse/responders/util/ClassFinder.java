@@ -20,12 +20,11 @@ public class ClassFinder {
      * Scans all classes accessible from the context class loader which belong to the given package and subpackages.
      *
      * @param packageName The base package
-     * @param recursive Toggles searching through subfolders on classpath.
+     * @param recursive   Toggles searching through subfolders on classpath.
      * @return The classes
      * @throws ClassNotFoundException
      * @throws IOException
      */
-
     public static List<Class> getClasses(String packageName, boolean recursive)
             throws ClassNotFoundException, IOException {
 
@@ -61,7 +60,6 @@ public class ClassFinder {
             if (directory.getPath().contains(".jar")) {
                 String jarFile = directory.getPath().split("!")[0].replace("file:\\", "");
                 jarFile = jarFile.replace("file:", "");
-                System.out.println("Adding jar: " + jarFile);
                 classes.addAll(getClassesFromJar(jarFile, packageName));
             }
             return classes;
@@ -94,15 +92,16 @@ public class ClassFinder {
                 if (je.isDirectory() || !je.getName().endsWith(".class") || je.getName().contains("$")) {
                     continue;
                 }
-                String className = je.getName().substring(0, je.getName().length() - 6);
-                className = className.replace('/', '.');
-                try {
-                    if(className.contains(pkg)) {
-                    Class c = cl.loadClass(className);
-                    jarClasses.add(c);
+                String fqClassName = je.getName().substring(0, je.getName().length() - 6);
+                fqClassName = fqClassName.replace('/', '.');
+                String pkgName = fqClassName.substring(0, fqClassName.lastIndexOf("."));
+                if (pkgName.equals(pkg)) {
+                    try {
+                        Class c = cl.loadClass(fqClassName);
+                        jarClasses.add(c);
+                    } catch (ClassNotFoundException ex) {
+                        System.err.println("Class not found: " + ex.getMessage());
                     }
-                } catch (ClassNotFoundException ex) {
-                    System.err.println("Class not found: " + ex.getMessage());
                 }
             }
 

@@ -70,6 +70,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     addPackage(t);
                     break;
                 case "scenario":
+                case "table template":
                     addScenario(t);
                     break;
                 default:
@@ -114,58 +115,59 @@ public class AutoCompleteResponder extends WikiPageResponder {
         }
     }
 
-    private JSONArray getMethods (Class klass) {
+    private JSONArray getMethods(Class klass) {
         JSONArray cMethods = new JSONArray();
-        try{
+        try {
             Method[] methods = klass.getMethods();
             for (Method method : methods) {
                 String readableMethodName = splitCamelCase(method.getName());
-                String insertText = "";
+                StringBuilder insertText = new StringBuilder();
                 JSONObject thisMethod = new JSONObject();
                 thisMethod.put("name", readableMethodName);
                 Class<?>[] parameters = method.getParameterTypes();
                 int numberOfParams = parameters.length;
                 if (numberOfParams > 0) {
                     JSONArray params = new JSONArray();
-                    for(Class<?> param : parameters) {
+                    for (Class<?> param : parameters) {
                         params.put(param.getSimpleName());
                     }
-
                     thisMethod.put("parameters", params);
                 }
+
                 String[] methodNameParts = readableMethodName.split(" ");
                 int numberOfParts = methodNameParts.length;
+
                 if (numberOfParams > numberOfParts) {
-                    insertText += readableMethodName + " | ";
-                    for(Class<?> param : parameters) {
-                        insertText += param.getSimpleName() + ", ";
+                    insertText.append(readableMethodName + " | ");
+                    for (Class<?> param : parameters) {
+                        insertText.append(param.getSimpleName() + ", ");
                     }
-                    insertText += " |";
+                    insertText.append(" |");
                 } else {
                     int totalCells = numberOfParts + numberOfParams;
 
                     List<Integer> paramPositions = new ArrayList<>();
-                    int paramPosition = totalCells -1;
+                    int paramPosition = totalCells - 1;
 
-                    for(int n = 0; n < numberOfParams; n++){
+                    for (int n = 0; n < numberOfParams; n++) {
                         paramPositions.add(paramPosition);
                         paramPosition -= 2;
                     }
                     int prm = 0;
-                    for(int p = 0; p < totalCells; p++) {
-                        if(!paramPositions.contains(p)){
-                            insertText += methodNameParts[p - prm] + " ";
+                    for (int p = 0; p < totalCells; p++) {
+                        if (!paramPositions.contains(p)) {
+                            insertText.append(methodNameParts[p - prm] + " ");
                         } else {
-                            insertText += "| " + parameters[prm].getSimpleName() + " | ";
+                            insertText.append("| " + parameters[prm].getSimpleName() + " | ");
                             prm++;
                         }
                     }
-                    if(numberOfParams == 0) {
-                        insertText += "|";
+                    if (numberOfParams == 0) {
+                        insertText.append("|");
                     }
                 }
 
-                thisMethod.put("wikiText", insertText);
+                thisMethod.put("wikiText", insertText.toString());
                 cMethods.put(thisMethod);
             }
         } catch (NoClassDefFoundError err) {
@@ -174,29 +176,28 @@ public class AutoCompleteResponder extends WikiPageResponder {
         return cMethods;
     }
 
-
     private void addPackage(Table t) {
         for (int row = 1; row < t.getRowCount(); row++) {
             packages.add(t.getCellContents(0, row));
-    }
+        }
     }
 
     private void addScenario(Table t) {
 
-       String scenarioName = "";
-       String insertText = "|";
-       JSONObject thisScenario = new JSONObject();
-       JSONArray parameters = new JSONArray();
-       String scenarioType = t.getCellContents(0, 0).toLowerCase();
+        String scenarioName = "";
+        String insertText = "|";
+        JSONObject thisScenario = new JSONObject();
+        JSONArray parameters = new JSONArray();
+        String scenarioType = t.getCellContents(0, 0).toLowerCase();
 
-       for (int col = 1; col < t.getColumnCountInRow(0); col++) {
-           insertText += " " + t.getCellContents(col, 0) + " |";
-           if ((col % 2) != 0) {
-               scenarioName += t.getCellContents(col, 0) + " ";
-           } else {
-               parameters.put(t.getCellContents(col, 0));
-           }
-       }
+        for (int col = 1; col < t.getColumnCountInRow(0); col++) {
+            insertText += " " + t.getCellContents(col, 0) + " |";
+            if ((col % 2) != 0) {
+                scenarioName += t.getCellContents(col, 0) + " ";
+            } else {
+                parameters.put(t.getCellContents(col, 0));
+            }
+        }
 
         thisScenario.put("name", scenarioName);
         thisScenario.put("wikiText", insertText.substring(2));
@@ -210,19 +211,19 @@ public class AutoCompleteResponder extends WikiPageResponder {
         int numRows = t.getRowCount();
         int maxCols = 0;
         String html = "<table>";
-        for(int row = 0; row < numRows; row++) {
+        for (int row = 0; row < numRows; row++) {
             int rowCols = t.getColumnCountInRow(row);
-            if(rowCols > maxCols) {
+            if (rowCols > maxCols) {
                 maxCols = rowCols;
             }
         }
-        for(int row = 0; row < numRows; row++) {
+        for (int row = 0; row < numRows; row++) {
             int rowCols = t.getColumnCountInRow(row);
-            int lastCol = rowCols -1;
+            int lastCol = rowCols - 1;
 
             html += "<tr>";
-            for(int col = 0; col < rowCols; col++) {
-                if (col == lastCol && col < (maxCols -1)) {
+            for (int col = 0; col < rowCols; col++) {
+                if (col == lastCol && col < (maxCols - 1)) {
                     html += "<td colspan=" + (maxCols - col) + ">" + t.getCellContents(col, row) + "</td>";
                 } else {
                     html += "<td>" + t.getCellContents(col, row) + "</td>";
