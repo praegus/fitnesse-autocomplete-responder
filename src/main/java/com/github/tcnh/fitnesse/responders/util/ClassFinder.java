@@ -16,20 +16,9 @@ import java.util.jar.JarFile;
 
 public class ClassFinder {
 
-    /**
-     * Scans all classes accessible from the context class loader which belong to the given package and subpackages.
-     *
-     * @param packageName The base package
-     * @param recursive   Toggles searching through subfolders on classpath.
-     * @return The classes
-     * @throws ClassNotFoundException
-     * @throws IOException
-     */
-    public static List<Class> getClasses(String packageName, boolean recursive)
+    public static List<Class> getClasses(String packageName, boolean recursive, URLClassLoader classLoader)
             throws ClassNotFoundException, IOException {
 
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        assert classLoader != null;
         String path = packageName.replace('.', '/');
         Enumeration resources = classLoader.getResources(path);
         List<File> dirs = new ArrayList<>();
@@ -40,27 +29,18 @@ public class ClassFinder {
         }
         List<Class> classes = new ArrayList<>();
         for (File directory : dirs) {
-            classes.addAll(findClasses(directory, packageName, recursive));
+            classes.addAll(findClasses(directory, packageName, recursive, classLoader));
         }
         return classes;
     }
 
-    /**
-     * Recursive method used to find all classes in a given directory and subdirs.
-     *
-     * @param directory   The base directory
-     * @param packageName The package name for classes found inside the base directory
-     * @param recursive   Toggles whether to search through subfolders
-     * @return The classes
-     * @throws ClassNotFoundException
-     */
-    private static Set<Class> findClasses(File directory, String packageName, boolean recursive) throws ClassNotFoundException {
+    private static Set<Class> findClasses(File directory, String packageName, boolean recursive, URLClassLoader classLoader) throws ClassNotFoundException {
         Set<Class> classes = new HashSet<>();
         if (!directory.exists()) {
             if (directory.getPath().contains(".jar")) {
                 String jarFile = directory.getPath().split("!")[0].replace("file:\\", "");
                 jarFile = jarFile.replace("file:", "");
-                classes.addAll(getClassesFromJar(jarFile, packageName));
+                classes.addAll(getClassesFromJar(jarFile, packageName, classLoader));
             }
             return classes;
         }
@@ -70,22 +50,22 @@ public class ClassFinder {
             if (file.isDirectory()) {
                 if (recursive) {
                     assert !file.getName().contains(".");
-                    classes.addAll(findClasses(file, packageName + "." + file.getName(), true));
+                    classes.addAll(findClasses(file, packageName + "." + file.getName(), true, classLoader));
                 }
             } else if (file.getName().endsWith(".class") && !file.getName().contains("$")) {
-                classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+                classes.add(classLoader.loadClass(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
             }
         }
         return classes;
     }
 
-    private static List<Class> getClassesFromJar(String jar, String pkg) {
+    private static List<Class> getClassesFromJar(String jar, String pkg, URLClassLoader classLoader) {
         List<Class> jarClasses = new ArrayList<>();
         try {
             JarFile jarFile = new JarFile(jar);
             Enumeration<JarEntry> e = jarFile.entries();
             URL[] urls = {new URL("jar:file:" + jar + "!/")};
-            URLClassLoader cl = URLClassLoader.newInstance(urls);
+            URLClassLoader cl = new URLClassLoader(urls, classLoader);
 
             while (e.hasMoreElements()) {
                 JarEntry je = e.nextElement();
@@ -100,7 +80,7 @@ public class ClassFinder {
                         Class c = cl.loadClass(fqClassName);
                         jarClasses.add(c);
                     } catch (ClassNotFoundException ex) {
-                        System.err.println("Class not found: " + ex.getMessage());
+                        //intentionally ignore classes that cannot be found
                     }
                 }
             }
