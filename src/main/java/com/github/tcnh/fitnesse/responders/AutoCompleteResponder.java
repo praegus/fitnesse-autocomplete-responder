@@ -19,8 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -77,22 +75,44 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     //Skip!
                     break;
             }
+            addVariables(t);
         }
 
         addClassesToAutocompleteList();
-        getVariablesInScope();
         json.put("classes", classes);
         json.put("scenarios", scenarios);
         json.put("variables", variables);
 
     }
 
-    private void getVariablesInScope() {
-        String html = makeHtml(context, page);
-        Matcher m = Pattern.compile("(\\$[^\\s]+)=").matcher(html);
-        while (m.find()) {
-            variables.put(m.group(1));
+    private void addVariables(Table t) {
+        int numRows = t.getRowCount();
+        for (int row = 0; row < numRows; row++) {
+            if(t.getCellContents(0, row).matches("\\$\\S+=")){
+                String varName = t.getCellContents(0, row).substring(0, t.getCellContents(0, row).length() -1);
+                List<String> cells = new ArrayList<>();
+                for (int c=0; c < t.getColumnCountInRow(row); c++ ) {
+                    cells.add(t.getCellContents(c, row));
+                }
+                JSONObject varData = new JSONObject();
+                varData.put("varName", varName);
+                varData.put("html", varDefinitionTable(cells));
+                varData.put("fullTable", tableToHtml(t));
+                variables.put(varData);
+            }
         }
+    }
+
+    private String varDefinitionTable(List<String> cells) {
+        StringBuilder result = new StringBuilder();
+        result.append("<table><tr>");
+        for(String cell : cells) {
+            result.append("<td>")
+                  .append(cell)
+                  .append("</td>");
+        }
+        result.append("</tr></table>");
+        return result.toString();
     }
 
     private void addClassesToAutocompleteList() {

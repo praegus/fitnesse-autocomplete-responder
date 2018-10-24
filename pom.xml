@@ -35,9 +35,9 @@
   </scm>
     <dependencies>
         <dependency>
-            <groupId>org.fitnesse</groupId>
+            <groupId>com.github.tcnh</groupId>
             <artifactId>fitnesse</artifactId>
-            <version>20161106</version>
+            <version>20180817</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
