@@ -1,6 +1,7 @@
 package com.github.tcnh.fitnesse.responders;
 
 import com.github.tcnh.fitnesse.responders.util.ClassFinder;
+
 import fitnesse.FitNesseContext;
 import fitnesse.http.Request;
 import fitnesse.http.Response;

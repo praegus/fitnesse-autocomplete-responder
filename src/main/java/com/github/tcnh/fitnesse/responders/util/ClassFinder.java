@@ -66,7 +66,7 @@ public class ClassFinder {
             Enumeration<JarEntry> e = jarFile.entries();
             URL[] urls = {new URL("jar:file:" + jar + "!/")};
             URLClassLoader cl = new URLClassLoader(urls, classLoader);
-
+            String pkgName;
             while (e.hasMoreElements()) {
                 JarEntry je = e.nextElement();
                 if (je.isDirectory() || !je.getName().endsWith(".class") || je.getName().contains("$")) {
@@ -74,7 +74,11 @@ public class ClassFinder {
                 }
                 String fqClassName = je.getName().substring(0, je.getName().length() - 6);
                 fqClassName = fqClassName.replace('/', '.');
-                String pkgName = fqClassName.substring(0, fqClassName.lastIndexOf("."));
+                if(fqClassName.lastIndexOf(".") >= 0) {
+                    pkgName = fqClassName.substring(0, fqClassName.lastIndexOf("."));
+                } else {
+                    pkgName = "";
+                }
                 if (pkgName.equals(pkg)) {
                     try {
                         Class c = cl.loadClass(fqClassName);
