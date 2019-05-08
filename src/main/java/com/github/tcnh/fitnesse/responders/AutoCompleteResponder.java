@@ -46,6 +46,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private WikiPage page;
     private FitNesseContext context;
     private URLClassLoader classLoader;
+    private Map<String, Table> scenarioTables = new HashMap<>();
 
 
     @Override
@@ -242,6 +243,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
         thisScenario.put("parameters", parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
+        scenarioTables.put(scenarioName.toString().trim(), t);
     }
 
     private void addTableTemplate(Table t) {
@@ -259,13 +261,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 .append(tplName)
                 .append(" |");
 
-        for (int row = 1; row < t.getRowCount(); row++) {
-            for (int col = 0; col < t.getColumnCountInRow(row); col++) {
-                String cellContents = t.getCellContents(col, row);
-                addAllMatches(ARG_PATTERN, inputs, cellContents);
-                addAllMatches(OUT_PATTERN, outputs, cellContents);
-            }
-        }
+        addAllMatchesFromTable(ARG_PATTERN, inputs, t);
+        addAllMatchesFromTable(OUT_PATTERN, outputs, t);
 
         if(inputs.size() > 0 || outputs.size() > 0) {
             insertText.append("\r\n" + "|");
@@ -275,7 +272,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
             }
             for (String output : outputs) {
                 parameters.put(output);
-                insertText.append(output).append("?").append(" |");
+                insertText.append(output).append("?").append("|");
             }
         }
 
@@ -285,13 +282,34 @@ public class AutoCompleteResponder extends WikiPageResponder {
         thisScenario.put("parameters", parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
+        scenarioTables.put(tplName, t);
     }
 
-    private void addAllMatches(Pattern pattern, Set<String> found, String cellContent) {
-        Matcher m = pattern.matcher(cellContent);
-        while (m.find()) {
-            String input = m.group(1);
-            found.add(input);
+    private void addAllMatchesFromTable(Pattern pattern, Set<String> found, Table t) {
+
+        for (int row = 1; row < t.getRowCount(); row++) {
+
+            StringBuilder potentialScenarioName = new StringBuilder();
+
+            for (int col = 0; col < t.getColumnCountInRow(row); col++) {
+
+                if ((col % 2) == 0) {
+                    potentialScenarioName.append(t.getCellContents(col, row))
+                            .append(" ");
+                }
+
+                String cellContent = t.getCellContents(col, row);
+                Matcher m = pattern.matcher(cellContent);
+                while (m.find()) {
+                    String input = m.group(1);
+                    found.add(input);
+                }
+            }
+
+            String cleanedUpPotentialScenarioName = potentialScenarioName.toString().trim().replaceAll(";$", "");
+            if (scenarioTables.containsKey(cleanedUpPotentialScenarioName)) {
+                addAllMatchesFromTable(pattern, found, scenarioTables.get(cleanedUpPotentialScenarioName));
+            }
         }
     }
 

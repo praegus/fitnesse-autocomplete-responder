@@ -46,14 +46,16 @@ public class ClassFinder {
         }
 
         File[] files = directory.listFiles();
-        for (File file : files) {
-            if (file.isDirectory()) {
-                if (recursive) {
-                    assert !file.getName().contains(".");
-                    classes.addAll(findClasses(file, packageName + "." + file.getName(), true, classLoader));
+        if(files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    if (recursive) {
+                        assert !file.getName().contains(".");
+                        classes.addAll(findClasses(file, packageName + "." + file.getName(), true, classLoader));
+                    }
+                } else if (file.getName().endsWith(".class") && !file.getName().contains("$")) {
+                    classes.add(classLoader.loadClass(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
                 }
-            } else if (file.getName().endsWith(".class") && !file.getName().contains("$")) {
-                classes.add(classLoader.loadClass(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
             }
         }
         return classes;
