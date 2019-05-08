@@ -20,6 +20,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,6 +34,9 @@ import org.json.JSONObject;
  */
 
 public class AutoCompleteResponder extends WikiPageResponder {
+
+    private static final Pattern ARG_PATTERN = Pattern.compile("@\\{(.+?)}");
+    private static final Pattern OUT_PATTERN = Pattern.compile("\\$(.+?)=");
 
     private JSONObject json = new JSONObject();
     private JSONArray classes = new JSONArray();
@@ -69,8 +74,10 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     addPackage(t);
                     break;
                 case "scenario":
-                case "table template":
                     addScenario(t);
+                    break;
+                case "table template":
+                    addTableTemplate(t);
                     break;
                 default:
                     //Skip!
@@ -235,6 +242,57 @@ public class AutoCompleteResponder extends WikiPageResponder {
         thisScenario.put("parameters", parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
+    }
+
+    private void addTableTemplate(Table t) {
+
+        StringBuilder insertText = new StringBuilder("|");
+        JSONObject thisScenario = new JSONObject();
+        JSONArray parameters = new JSONArray();
+
+        Set<String> inputs = new HashSet<>();
+        Set<String> outputs= new HashSet<>();
+
+
+        String tplName = t.getCellContents(1, 0);
+        insertText.append(" ")
+                .append(tplName)
+                .append(" |");
+
+        for (int row = 1; row < t.getRowCount(); row++) {
+            for (int col = 0; col < t.getColumnCountInRow(row); col++) {
+                String cellContents = t.getCellContents(col, row);
+                addAllMatches(ARG_PATTERN, inputs, cellContents);
+                addAllMatches(OUT_PATTERN, outputs, cellContents);
+            }
+        }
+
+        if(inputs.size() > 0 || outputs.size() > 0) {
+            insertText.append("\r\n" + "|");
+            for (String input : inputs) {
+                parameters.put(input);
+                insertText.append(input).append("|");
+            }
+            for (String output : outputs) {
+                parameters.put(output);
+                insertText.append(output).append("?").append(" |");
+            }
+        }
+
+        thisScenario.put("name", tplName);
+        thisScenario.put("wikiText", insertText.substring(2));
+        thisScenario.put("insertText", insertText.toString());
+        thisScenario.put("parameters", parameters);
+        thisScenario.put("html", tableToHtml(t));
+        scenarios.put(thisScenario);
+    }
+
+    private void addAllMatches(Pattern pattern, Set<String> found, String cellContent) {
+        Matcher m = pattern.matcher(cellContent);
+        while (m.find()) {
+            String input = m.group(1);
+            found.add(input);
+        }
     }
 
     private String tableToHtml(Table t) {
