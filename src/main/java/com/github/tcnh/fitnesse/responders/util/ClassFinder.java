@@ -82,7 +82,11 @@ public class ClassFinder {
                 if (pkgName.equals(pkg)) {
                     try {
                         Class c = cl.loadClass(fqClassName);
-                        jarClasses.add(c);
+                        //Ignore classes without any public constructor
+                        if(c.getConstructors().length > 0) {
+                            jarClasses.add(c);
+                        }
+
                     } catch (ClassNotFoundException ex) {
                         //intentionally ignore classes that cannot be found
                     }
