@@ -37,6 +37,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
     private static final Pattern ARG_PATTERN = Pattern.compile("@\\{(.+?)}");
     private static final Pattern OUT_PATTERN = Pattern.compile("\\$(.+?)=");
+    private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("\\W_(?=\\W|$)");
 
     private JSONObject json = new JSONObject();
     private JSONArray classes = new JSONArray();
@@ -219,21 +220,39 @@ public class AutoCompleteResponder extends WikiPageResponder {
     }
 
     private void addScenario(Table t) {
-
         StringBuilder scenarioName = new StringBuilder();
         StringBuilder insertText = new StringBuilder("|");
         JSONObject thisScenario = new JSONObject();
         JSONArray parameters = new JSONArray();
 
-        for (int col = 1; col < t.getColumnCountInRow(0); col++) {
-            insertText.append(" ")
-                    .append(t.getCellContents(col, 0))
-                    .append(" |");
-            if ((col % 2) != 0) {
-                scenarioName.append(t.getCellContents(col, 0))
-                        .append(" ");
-            } else {
-                parameters.put(t.getCellContents(col, 0));
+        if(UNDERSCORE_PATTERN.matcher(t.getCellContents(1, 0)).find()) {
+            String textForAutocomplete = t.getCellContents(1, 0);
+            String[] params = t.getCellContents(2, 0).split(",\\s*");
+            for (String param : params) {
+                parameters.put(param);
+                textForAutocomplete = textForAutocomplete
+                        .replaceFirst(UNDERSCORE_PATTERN.pattern(), " | " + param + " |");
+            }
+            if(!textForAutocomplete.endsWith("|")) {
+                textForAutocomplete += " |";
+            }
+            insertText.append(" ").append(textForAutocomplete);
+
+            String readableName = t.getCellContents(1, 0)
+                    .replaceAll(UNDERSCORE_PATTERN.pattern(), " ");
+            scenarioName.append(readableName);
+
+        } else {
+            for (int col = 1; col < t.getColumnCountInRow(0); col++) {
+                insertText.append(" ")
+                        .append(t.getCellContents(col, 0))
+                        .append(" |");
+                if ((col % 2) != 0) {
+                    scenarioName.append(t.getCellContents(col, 0))
+                            .append(" ");
+                } else {
+                    parameters.put(t.getCellContents(col, 0));
+                }
             }
         }
 
