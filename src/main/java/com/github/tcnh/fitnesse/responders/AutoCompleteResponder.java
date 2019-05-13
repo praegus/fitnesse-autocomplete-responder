@@ -46,7 +46,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private WikiPage page;
     private FitNesseContext context;
     private URLClassLoader classLoader;
-    private Map<String, Table> scenarioTables = new HashMap<>();
+    private Map<String, Table> tableTemplateTables = new HashMap<>();
 
 
     @Override
@@ -243,7 +243,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
         thisScenario.put("parameters", parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
-        scenarioTables.put(scenarioName.toString().trim(), t);
     }
 
     private void addTableTemplate(Table t) {
@@ -252,8 +251,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
         JSONObject thisScenario = new JSONObject();
         JSONArray parameters = new JSONArray();
 
-        Set<String> inputs = new HashSet<>();
-        Set<String> outputs= new HashSet<>();
+        Set<String> inputs = new LinkedHashSet<>();
+        Set<String> outputs= new LinkedHashSet<>();
 
 
         String tplName = t.getCellContents(1, 0);
@@ -282,19 +281,19 @@ public class AutoCompleteResponder extends WikiPageResponder {
         thisScenario.put("parameters", parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
-        scenarioTables.put(tplName, t);
+        tableTemplateTables.put(tplName, t);
     }
 
     private void addAllMatchesFromTable(Pattern pattern, Set<String> found, Table t) {
 
         for (int row = 1; row < t.getRowCount(); row++) {
 
-            StringBuilder potentialScenarioName = new StringBuilder();
+            StringBuilder potentialTableTemplateName = new StringBuilder();
 
             for (int col = 0; col < t.getColumnCountInRow(row); col++) {
 
                 if ((col % 2) == 0) {
-                    potentialScenarioName.append(t.getCellContents(col, row))
+                    potentialTableTemplateName.append(t.getCellContents(col, row))
                             .append(" ");
                 }
 
@@ -306,9 +305,9 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 }
             }
 
-            String cleanedUpPotentialScenarioName = potentialScenarioName.toString().trim().replaceAll(";$", "");
-            if (scenarioTables.containsKey(cleanedUpPotentialScenarioName)) {
-                addAllMatchesFromTable(pattern, found, scenarioTables.get(cleanedUpPotentialScenarioName));
+            String cleanPotentialTemplateName = potentialTableTemplateName.toString().trim().replaceAll(";$", "");
+            if (tableTemplateTables.containsKey(cleanPotentialTemplateName)) {
+                addAllMatchesFromTable(pattern, found, tableTemplateTables.get(cleanPotentialTemplateName));
             }
         }
     }
