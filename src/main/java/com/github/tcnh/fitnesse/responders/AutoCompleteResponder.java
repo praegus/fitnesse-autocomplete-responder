@@ -38,6 +38,19 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private static final Pattern ARG_PATTERN = Pattern.compile("@\\{(.+?)}");
     private static final Pattern OUT_PATTERN = Pattern.compile("\\$(.+?)=");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("\\W_(?=\\W|$)");
+    private static final Set<String> METHODS_TO_IGNORE;
+
+    static {
+        METHODS_TO_IGNORE = new HashSet<>();
+        METHODS_TO_IGNORE.add("toString");
+        METHODS_TO_IGNORE.add("aroundSlimInvoke");
+        METHODS_TO_IGNORE.add("getClass");
+        METHODS_TO_IGNORE.add("equals");
+        METHODS_TO_IGNORE.add("notify");
+        METHODS_TO_IGNORE.add("notifyAll");
+        METHODS_TO_IGNORE.add("wait");
+        METHODS_TO_IGNORE.add("hashCode");
+    }
 
     private JSONObject json = new JSONObject();
     private JSONArray classes = new JSONArray();
@@ -150,62 +163,67 @@ public class AutoCompleteResponder extends WikiPageResponder {
         try {
             Method[] methods = klass.getMethods();
             for (Method method : methods) {
-                String readableMethodName = splitCamelCase(method.getName());
-                StringBuilder insertText = new StringBuilder();
-                JSONObject thisMethod = new JSONObject();
-                thisMethod.put("name", readableMethodName);
-                Class<?>[] parameters = method.getParameterTypes();
-                int numberOfParams = parameters.length;
-                if (numberOfParams > 0) {
-                    JSONArray params = new JSONArray();
-                    for (Class<?> param : parameters) {
-                        params.put(param.getSimpleName());
+
+                // If method is in the ignore list and not overridden in the current class, ignore it
+                if (!METHODS_TO_IGNORE.contains(method.getName()) || method.getDeclaringClass().equals(klass)) {
+
+                    String readableMethodName = splitCamelCase(method.getName());
+                    StringBuilder insertText = new StringBuilder();
+                    JSONObject thisMethod = new JSONObject();
+                    thisMethod.put("name", readableMethodName);
+                    Class<?>[] parameters = method.getParameterTypes();
+                    int numberOfParams = parameters.length;
+                    if (numberOfParams > 0) {
+                        JSONArray params = new JSONArray();
+                        for (Class<?> param : parameters) {
+                            params.put(param.getSimpleName());
+                        }
+                        thisMethod.put("parameters", params);
                     }
-                    thisMethod.put("parameters", params);
-                }
 
-                String[] methodNameParts = readableMethodName.split(" ");
-                int numberOfParts = methodNameParts.length;
+                    String[] methodNameParts = readableMethodName.split(" ");
+                    int numberOfParts = methodNameParts.length;
 
-                if (numberOfParams > numberOfParts) {
-                    insertText.append(readableMethodName)
-                            .append(" | ");
-                    for (Class<?> param : parameters) {
-                        insertText.append(param.getSimpleName())
-                                .append(", ");
-                    }
-                    insertText.append(" |");
-                } else {
-                    int totalCells = numberOfParts + numberOfParams;
+                    if (numberOfParams > numberOfParts) {
+                        insertText.append(readableMethodName)
+                                .append(" | ");
+                        for (Class<?> param : parameters) {
+                            insertText.append(param.getSimpleName())
+                                    .append(", ");
+                        }
+                        insertText.append(" |");
+                    } else {
+                        int totalCells = numberOfParts + numberOfParams;
 
-                    List<Integer> paramPositions = new ArrayList<>();
-                    int paramPosition = totalCells - 1;
+                        List<Integer> paramPositions = new ArrayList<>();
+                        int paramPosition = totalCells - 1;
 
-                    int n = 0;
-                    while (n < numberOfParams) {
-                        paramPositions.add(paramPosition);
-                        paramPosition -= 2;
-                        n++;
-                    }
-                    int prm = 0;
-                    for (int p = 0; p < totalCells; p++) {
-                        if (!paramPositions.contains(p)) {
-                            insertText.append(methodNameParts[p - prm])
-                                    .append(" ");
-                        } else {
-                            insertText.append("| ")
-                                    .append(parameters[prm].getSimpleName())
-                                    .append(" | ");
-                            prm++;
+                        int n = 0;
+                        while (n < numberOfParams) {
+                            paramPositions.add(paramPosition);
+                            paramPosition -= 2;
+                            n++;
+                        }
+                        int prm = 0;
+                        for (int p = 0; p < totalCells; p++) {
+                            if (!paramPositions.contains(p)) {
+                                insertText.append(methodNameParts[p - prm])
+                                        .append(" ");
+                            } else {
+                                insertText.append("| ")
+                                        .append(parameters[prm].getSimpleName())
+                                        .append(" | ");
+                                prm++;
+                            }
+                        }
+                        if (numberOfParams == 0) {
+                            insertText.append("|");
                         }
                     }
-                    if (numberOfParams == 0) {
-                        insertText.append("|");
-                    }
-                }
 
-                thisMethod.put("wikiText", insertText.toString());
-                cMethods.put(thisMethod);
+                    thisMethod.put("wikiText", insertText.toString());
+                    cMethods.put(thisMethod);
+                }
             }
         } catch (NoClassDefFoundError err) {
             //intentionally ignore classes that cannot be found
