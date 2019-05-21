@@ -1,4 +1,4 @@
-package com.github.tcnh.fitnesse.responders.util;
+package nl.praegus.fitnesse.responders.util;
 
 import java.io.File;
 import java.io.IOException;
