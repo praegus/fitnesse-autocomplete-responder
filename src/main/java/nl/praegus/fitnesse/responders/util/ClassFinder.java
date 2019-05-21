@@ -1,10 +1,17 @@
 package nl.praegus.fitnesse.responders.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -15,6 +22,7 @@ import java.util.jar.JarFile;
  */
 
 public class ClassFinder {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClassFinder.class);
 
     public static List<Class> getClasses(String packageName, boolean recursive, URLClassLoader classLoader)
             throws ClassNotFoundException, IOException {
@@ -46,7 +54,7 @@ public class ClassFinder {
         }
 
         File[] files = directory.listFiles();
-        if(files != null) {
+        if (files != null) {
             for (File file : files) {
                 if (file.isDirectory()) {
                     if (recursive) {
@@ -63,8 +71,7 @@ public class ClassFinder {
 
     private static List<Class> getClassesFromJar(String jar, String pkg, URLClassLoader classLoader) {
         List<Class> jarClasses = new ArrayList<>();
-        try {
-            JarFile jarFile = new JarFile(jar);
+        try (JarFile jarFile = new JarFile(jar)) {
             Enumeration<JarEntry> e = jarFile.entries();
             URL[] urls = {new URL("jar:file:" + jar + "!/")};
             URLClassLoader cl = new URLClassLoader(urls, classLoader);
@@ -76,8 +83,8 @@ public class ClassFinder {
                 }
                 String fqClassName = je.getName().substring(0, je.getName().length() - 6);
                 fqClassName = fqClassName.replace('/', '.');
-                if(fqClassName.lastIndexOf(".") >= 0) {
-                    pkgName = fqClassName.substring(0, fqClassName.lastIndexOf("."));
+                if (fqClassName.lastIndexOf('.') >= 0) {
+                    pkgName = fqClassName.substring(0, fqClassName.lastIndexOf('.'));
                 } else {
                     pkgName = "";
                 }
@@ -85,21 +92,17 @@ public class ClassFinder {
                     try {
                         Class c = cl.loadClass(fqClassName);
                         //Ignore classes without any public constructor
-                        if(c.getConstructors().length > 0) {
+                        if (c.getConstructors().length > 0) {
                             jarClasses.add(c);
                         }
-
                     } catch (ClassNotFoundException ex) {
                         //intentionally ignore classes that cannot be found
                     }
                 }
             }
-
         } catch (IOException e) {
-            System.err.println("IOException: " + e);
+            LOGGER.error("IOException: " + e);
         }
         return jarClasses;
     }
-
-
 }
