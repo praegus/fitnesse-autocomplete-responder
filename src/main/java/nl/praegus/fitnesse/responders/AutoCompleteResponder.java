@@ -1,7 +1,5 @@
 package nl.praegus.fitnesse.responders;
 
-import nl.praegus.fitnesse.responders.util.ClassFinder;
-
 import fitnesse.FitNesseContext;
 import fitnesse.http.Request;
 import fitnesse.http.Response;
@@ -13,18 +11,26 @@ import fitnesse.testsystems.slim.HtmlTableScanner;
 import fitnesse.testsystems.slim.Table;
 import fitnesse.testsystems.slim.TableScanner;
 import fitnesse.wiki.WikiPage;
+import nl.praegus.fitnesse.responders.util.ClassFinder;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 /**
  * Responder for use with autocomplete javascript.
@@ -34,11 +40,14 @@ import org.json.JSONObject;
  */
 
 public class AutoCompleteResponder extends WikiPageResponder {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(AutoCompleteResponder.class);
     private static final Pattern ARG_PATTERN = Pattern.compile("@\\{(.+?)}");
     private static final Pattern OUT_PATTERN = Pattern.compile("\\$(.+?)=");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("\\W_(?=\\W|$)");
     private static final Set<String> METHODS_TO_IGNORE;
+    private static final String TDEND = "</td>";
+    private static final String PARAMETERS = "parameters";
+    private static final String WIKI_TEXT = "wikiText";
 
     static {
         METHODS_TO_IGNORE = new HashSet<>();
@@ -62,7 +71,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private URLClassLoader classLoader;
     private Map<String, Table> tableTemplateTables = new HashMap<>();
 
-
     @Override
     public Response makeResponse(FitNesseContext pagecontext, Request request) throws Exception {
         context = pagecontext;
@@ -77,7 +85,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
         response.setContent(json.toString(3));
 
         return response;
-
     }
 
     private void getAutoCompleteDataFromPage() {
@@ -105,16 +112,15 @@ public class AutoCompleteResponder extends WikiPageResponder {
         json.put("classes", classes);
         json.put("scenarios", scenarios);
         json.put("variables", variables);
-
     }
 
     private void addVariables(Table t) {
         int numRows = t.getRowCount();
         for (int row = 0; row < numRows; row++) {
-            if(t.getCellContents(0, row).matches("\\$\\S+=")){
-                String varName = t.getCellContents(0, row).substring(0, t.getCellContents(0, row).length() -1);
+            if (t.getCellContents(0, row).matches("\\$\\S+=")) {
+                String varName = t.getCellContents(0, row).substring(0, t.getCellContents(0, row).length() - 1);
                 List<String> cells = new ArrayList<>();
-                for (int c=0; c < t.getColumnCountInRow(row); c++ ) {
+                for (int c = 0; c < t.getColumnCountInRow(row); c++) {
                     cells.add(t.getCellContents(c, row));
                 }
                 JSONObject varData = new JSONObject();
@@ -129,10 +135,10 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private String varDefinitionTable(List<String> cells) {
         StringBuilder result = new StringBuilder();
         result.append("<table><tr>");
-        for(String cell : cells) {
+        for (String cell : cells) {
             result.append("<td>")
-                  .append(cell)
-                  .append("</td>");
+                    .append(cell)
+                    .append(TDEND);
         }
         result.append("</tr></table>");
         return result.toString();
@@ -145,7 +151,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
             try {
                 classList.addAll(ClassFinder.getClasses(pkg, false, classLoader));
             } catch (Exception e) {
-                System.err.println("Exception for package: " + pkg + " - " + e.getMessage());
+                LOGGER.error("Exception for package: " + pkg + " - " + e.getMessage());
             }
 
             for (Class klass : classList) {
@@ -178,7 +184,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                         for (Class<?> param : parameters) {
                             params.put(param.getSimpleName());
                         }
-                        thisMethod.put("parameters", params);
+                        thisMethod.put(PARAMETERS, params);
                     }
 
                     String[] methodNameParts = readableMethodName.split(" ");
@@ -221,7 +227,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                         }
                     }
 
-                    thisMethod.put("wikiText", insertText.toString());
+                    thisMethod.put(WIKI_TEXT, insertText.toString());
                     cMethods.put(thisMethod);
                 }
             }
@@ -243,7 +249,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
         JSONObject thisScenario = new JSONObject();
         JSONArray parameters = new JSONArray();
 
-        if(UNDERSCORE_PATTERN.matcher(t.getCellContents(1, 0)).find()) {
+        if (UNDERSCORE_PATTERN.matcher(t.getCellContents(1, 0)).find()) {
             String textForAutocomplete = t.getCellContents(1, 0);
             String[] params = t.getCellContents(2, 0).split(",\\s*");
             for (String param : params) {
@@ -251,7 +257,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 textForAutocomplete = textForAutocomplete
                         .replaceFirst(UNDERSCORE_PATTERN.pattern(), " | " + param + " |");
             }
-            if(!textForAutocomplete.endsWith("|")) {
+            if (!textForAutocomplete.endsWith("|")) {
                 textForAutocomplete += " |";
             }
             insertText.append(" ").append(textForAutocomplete);
@@ -259,7 +265,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
             String readableName = t.getCellContents(1, 0)
                     .replaceAll(UNDERSCORE_PATTERN.pattern(), " ");
             scenarioName.append(readableName);
-
         } else {
             for (int col = 1; col < t.getColumnCountInRow(0); col++) {
                 insertText.append(" ")
@@ -275,9 +280,9 @@ public class AutoCompleteResponder extends WikiPageResponder {
         }
 
         thisScenario.put("name", scenarioName.toString());
-        thisScenario.put("wikiText", insertText.substring(2));
+        thisScenario.put(WIKI_TEXT, insertText.substring(2));
         thisScenario.put("insertText", insertText.toString());
-        thisScenario.put("parameters", parameters);
+        thisScenario.put(PARAMETERS, parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
     }
@@ -289,8 +294,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
         JSONArray parameters = new JSONArray();
 
         Set<String> inputs = new LinkedHashSet<>();
-        Set<String> outputs= new LinkedHashSet<>();
-
+        Set<String> outputs = new LinkedHashSet<>();
 
         String tplName = t.getCellContents(1, 0);
         insertText.append(" ")
@@ -300,7 +304,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
         addAllMatchesFromTable(ARG_PATTERN, inputs, t);
         addAllMatchesFromTable(OUT_PATTERN, outputs, t);
 
-        if(inputs.size() > 0 || outputs.size() > 0) {
+        if (!inputs.isEmpty() || !outputs.isEmpty()) {
             insertText.append("\r\n" + "|");
             for (String input : inputs) {
                 parameters.put(input);
@@ -313,9 +317,9 @@ public class AutoCompleteResponder extends WikiPageResponder {
         }
 
         thisScenario.put("name", tplName);
-        thisScenario.put("wikiText", insertText.substring(2));
+        thisScenario.put(WIKI_TEXT, insertText.substring(2));
         thisScenario.put("insertText", insertText.toString());
-        thisScenario.put("parameters", parameters);
+        thisScenario.put(PARAMETERS, parameters);
         thisScenario.put("html", tableToHtml(t));
         scenarios.put(thisScenario);
         tableTemplateTables.put(tplName, t);
@@ -369,11 +373,11 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     html.append("<td colspan=")
                             .append(maxCols - col).append(">")
                             .append(t.getCellContents(col, row))
-                            .append("</td>");
+                            .append(TDEND);
                 } else {
                     html.append("<td>")
                             .append(t.getCellContents(col, row)
-                            ).append("</td>");
+                            ).append(TDEND);
                 }
             }
             html.append("</tr>");
@@ -382,7 +386,6 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
         return html.toString();
     }
-
 
     private void setClassPathsForPage() {
         WikiTestPage testPage = new WikiTestPage(page);
@@ -397,7 +400,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 urls[i] = classPathItem.toURI().toURL();
             } catch (MalformedURLException e) {
                 //this shouldn't happen!
-                e.printStackTrace();
+                LOGGER.error(e.getMessage());
             }
             i++;
         }
@@ -408,8 +411,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private void addToClassPath(URL[] urls) {
         try {
             classLoader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
         }
     }
 
@@ -423,5 +426,4 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 " "
         ).toLowerCase();
     }
-
 }
