@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.tcnh</groupId>
+    <groupId>nl.praegus</groupId>
     <artifactId>fitnesse-autocomplete-responder</artifactId>
     <version>1.0.13-SNAPSHOT</version>
-    <url>https://github.com/tcnh/FitNesseAutocompleteResponder</url>
+    <url>https://gitlab.com/praegus/toolchain-fixtures/fitnesse-autocomplete-responder</url>
     <name>AutoComplete responder for FitNesse</name>
     <description>Returns context-aware json with fixture methods, scenario's and slim symbols in scope</description>
 
@@ -25,12 +25,18 @@
             <organization>Praegus B.V.</organization>
             <organizationUrl>http://www.praegus.nl</organizationUrl>
         </developer>
+        <developer>
+            <name>Maarten-Jan van Gool</name>
+            <email>maarten-jan.van.gool@praegus.nl</email>
+            <organization>Praegus B.V.</organization>
+            <organizationUrl>http://www.praegus.nl</organizationUrl>
+        </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:tcnh/FitNesseAutocompleteResponder.git</connection>
-        <url>https://github.com/tcnh/FitNesseAutocompleteResponder.git</url>
-        <developerConnection>scm:git:git@github.com:tcnh/FitNesseAutocompleteResponder.git</developerConnection>
+        <connection>scm:git@gitlab.com:praegus/toolchain-fixtures/fitnesse-autocomplete-responder.git</connection>
+        <url>https://gitlab.com/praegus/toolchain-fixtures/fitnesse-autocomplete-responder.git</url>
+        <developerConnection>scm:git@gitlab.com:praegus/toolchain-fixtures/fitnesse-autocomplete-responder.git</developerConnection>
       <tag>HEAD</tag>
   </scm>
     <dependencies>
