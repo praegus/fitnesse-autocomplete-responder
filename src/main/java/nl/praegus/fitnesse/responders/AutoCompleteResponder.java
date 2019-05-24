@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -46,6 +47,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("\\W_(?=\\W|$)");
     private static final Set<String> METHODS_TO_IGNORE;
     private static final String TDEND = "</td>";
+    private static final String NAME = "name";
+    private static final String ANNOTATIONS = "annotations";
     private static final String PARAMETERS = "parameters";
     private static final String WIKI_TEXT = "wikiText";
 
@@ -177,6 +180,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     StringBuilder insertText = new StringBuilder();
                     JSONObject thisMethod = new JSONObject();
                     thisMethod.put("name", readableMethodName);
+
                     Class<?>[] parameters = method.getParameterTypes();
                     int numberOfParams = parameters.length;
                     if (numberOfParams > 0) {
@@ -185,6 +189,14 @@ public class AutoCompleteResponder extends WikiPageResponder {
                             params.put(param.getSimpleName());
                         }
                         thisMethod.put(PARAMETERS, params);
+                    }
+
+                    if(method.getDeclaredAnnotations().length > 0) {
+                        JSONArray annotations = new JSONArray();
+                        for(Annotation a : method.getDeclaredAnnotations()) {
+                            annotations.put(a.annotationType().getSimpleName());
+                        }
+                        thisMethod.put(ANNOTATIONS, annotations);
                     }
 
                     String[] methodNameParts = readableMethodName.split(" ");
