@@ -18,10 +18,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Responder for use with autocomplete javascript.
@@ -44,10 +50,15 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private static final Pattern ARG_PATTERN = Pattern.compile("@\\{(.+?)}");
     private static final Pattern OUT_PATTERN = Pattern.compile("\\$(.+?)=");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("\\W_(?=\\W|$)");
+    private static final String APIDOCS_FOLDER = "fixtures" + File.separator + "apidocs";
     private static final Set<String> METHODS_TO_IGNORE;
     private static final String TDEND = "</td>";
+    private static final String NAME = "name";
+    private static final String ANNOTATIONS = "annotations";
     private static final String PARAMETERS = "parameters";
     private static final String WIKI_TEXT = "wikiText";
+    private static final String JAVADOC = "javaDoc";
+
 
     static {
         METHODS_TO_IGNORE = new HashSet<>();
@@ -166,6 +177,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
     private JSONArray getMethods(Class klass) {
         JSONArray cMethods = new JSONArray();
+        JSONObject javaDocForClass = javadocForClass(klass.getName());
         try {
             Method[] methods = klass.getMethods();
             for (Method method : methods) {
@@ -176,7 +188,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     String readableMethodName = splitCamelCase(method.getName());
                     StringBuilder insertText = new StringBuilder();
                     JSONObject thisMethod = new JSONObject();
-                    thisMethod.put("name", readableMethodName);
+                    thisMethod.put(NAME, readableMethodName);
+
                     Class<?>[] parameters = method.getParameterTypes();
                     int numberOfParams = parameters.length;
                     if (numberOfParams > 0) {
@@ -185,6 +198,14 @@ public class AutoCompleteResponder extends WikiPageResponder {
                             params.put(param.getSimpleName());
                         }
                         thisMethod.put(PARAMETERS, params);
+                    }
+
+                    if (method.getDeclaredAnnotations().length > 0) {
+                        JSONArray annotations = new JSONArray();
+                        for (Annotation a : method.getDeclaredAnnotations()) {
+                            annotations.put(a.annotationType().getSimpleName());
+                        }
+                        thisMethod.put(ANNOTATIONS, annotations);
                     }
 
                     String[] methodNameParts = readableMethodName.split(" ");
@@ -228,6 +249,12 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     }
 
                     thisMethod.put(WIKI_TEXT, insertText.toString());
+
+                    if (javaDocForClass.has(method.getName()) && javaDocForClass.getJSONObject(method.getName()).length() > 0) {
+                        JSONObject javaDocForMethod = javaDocForClass.getJSONObject(method.getName());
+                        thisMethod.put(JAVADOC, javaDocForMethod);
+                    }
+
                     cMethods.put(thisMethod);
                 }
             }
@@ -425,5 +452,21 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 ),
                 " "
         ).toLowerCase();
+    }
+
+    private JSONObject javadocForClass(String className) {
+        StringBuilder sb = new StringBuilder();
+        try (Stream<String> stream = Files.lines(Paths.get(APIDOCS_FOLDER + File.separator + className + ".json"), StandardCharsets.UTF_8)) {
+            stream.forEach(s -> sb.append(s).append("\n"));
+        } catch (IOException e) {
+            //Ignore missing documentation
+        }
+        if (!sb.toString().isEmpty()) {
+            return new JSONObject(sb.toString());
+        } else {
+            return new JSONObject();
+        }
+
+
     }
 }
