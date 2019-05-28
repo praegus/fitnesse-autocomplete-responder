@@ -16,7 +16,7 @@ cache:
 build:
   stage: build
   script: mvn $MAVEN_CLI_OPTS test
-  image: "maven:3.6.0-jdk-8-alpine"
+  image: "maven:3.6.1-jdk-11"
   tags:
     - mvn
   artifacts:
@@ -31,7 +31,7 @@ build:
 sonar:
   stage: sonar
   script: mvn sonar:sonar -Dsonar.projectKey=fitnesse-autocomplete-responder -Dsonar.host.url=$SONAR_ENDPOINT -Dsonar.login=$SONAR_LOGIN
-  image: "maven:3.6.0-jdk-8-alpine"
+  image: "maven:3.6.1-jdk-11"
   tags:
     - mvn
   except:
@@ -46,9 +46,9 @@ release:
     - echo "${GPG_KEY}" | gpg --batch --import
     - mvn $MAVEN_CLI_OPTS versions:set -DremoveSnapshot
     - mvn $MAVEN_CLI_OPTS -P release -DskipTests -Dgpg.passphrase=${GPG_PASS} deploy
-  image: "maven:3.6.0-jdk-8-alpine"
+  image: "maven:3.6.1-jdk-9-alpine"
   artifacts:
-    name: "fitnesse-autocomplete-responder"
+    name: "maven:3.6.1-jdk-11"
     expire_in: 1 week
     paths:
       - target/*
@@ -59,7 +59,7 @@ release:
 
 update-version:
   stage: update-version
-  image: "maven:3.6.0-jdk-8-alpine"
+  image: "maven:3.6.1-jdk-11"
   script:
     - apk update && apk upgrade && apk add --no-cache bash git openssh
     - git config --global user.email "macmini@praegus.nl"
