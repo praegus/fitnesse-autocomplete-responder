@@ -46,9 +46,9 @@ release:
     - echo "${GPG_KEY}" | gpg --batch --import
     - mvn $MAVEN_CLI_OPTS versions:set -DremoveSnapshot
     - mvn $MAVEN_CLI_OPTS -P release -DskipTests -Dgpg.passphrase=${GPG_PASS} deploy
-  image: "maven:3.6.1-jdk-9-alpine"
+  image: "maven:3.6.1-jdk-11"
   artifacts:
-    name: "maven:3.6.1-jdk-11"
+    name: "fitnesse-autocomplete-responder"
     expire_in: 1 week
     paths:
       - target/*
