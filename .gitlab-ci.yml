@@ -19,7 +19,7 @@ build:
   script: mvn $MAVEN_CLI_OPTS test
   image: "maven-git:latest"
   tags:
-    - mave-git
+    - maven-git
   artifacts:
     name: $PROJECT_NAME
     expire_in: 1 hour
@@ -69,4 +69,4 @@ update-version:
   only:
     - master
   tags:
-    - mvn
+    - maven-git
