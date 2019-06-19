@@ -17,16 +17,14 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 /**
  * Responder for use with autocomplete javascript.
@@ -46,18 +44,22 @@ import java.util.stream.Stream;
  */
 
 public class AutoCompleteResponder extends WikiPageResponder {
+    private static final String APIDOCS_LOCATION = "META-INF/apidocs/";
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoCompleteResponder.class);
     private static final Pattern ARG_PATTERN = Pattern.compile("@\\{(.+?)}");
     private static final Pattern OUT_PATTERN = Pattern.compile("\\$(.+?)=");
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("\\W_(?=\\W|$)");
-    private static final String APIDOCS_FOLDER = "fixtures" + File.separator + "apidocs";
     private static final Set<String> METHODS_TO_IGNORE;
     private static final String TDEND = "</td>";
     private static final String NAME = "name";
+    private static final String READABLENAME = "readableName";
+    private static final String TYPE = "type";
+    private static final String EXCEPTIONS = "exceptions";
     private static final String ANNOTATIONS = "annotations";
     private static final String PARAMETERS = "parameters";
     private static final String WIKI_TEXT = "wikiText";
-    private static final String JAVADOC = "javaDoc";
+    private static final String USAGE = "usage";
+    private static final String CONTEXT_STR = "contexthelp";
 
 
     static {
@@ -167,93 +169,72 @@ public class AutoCompleteResponder extends WikiPageResponder {
 
             for (Class klass : classList) {
                 JSONObject thisClass = new JSONObject();
+                JSONObject javaDocForClass = javadocForClass(klass);
+
+                if (javaDocForClass.length() > 0) {
+                    thisClass.put("methods", javaDocForClass.get("publicMethods"));
+                    thisClass.put("constructors", javaDocForClass.get("constructors"));
+                } else {
+                    thisClass.put("methods", getMethodsByReflection(klass));
+                    thisClass.put("constructors", getConstructorsByReflection(klass));
+                }
+
                 thisClass.put("qualifiedName", klass.getName());
                 thisClass.put("readableName", splitCamelCase(klass.getSimpleName()));
-                thisClass.put("availableMethods", getMethods(klass));
+
                 classes.put(thisClass);
             }
         }
     }
 
-    private JSONArray getMethods(Class klass) {
+    private JSONArray getConstructorsByReflection(Class klass) {
+        JSONArray cConstructors = new JSONArray();
+        try {
+            Constructor[] constructors = klass.getConstructors();
+            for (Constructor constructor : constructors) {
+                String usage = generateConstructorUsageString(klass.getSimpleName(), constructor.getParameterTypes());
+                JSONObject thisConstructor = new JSONObject();
+
+                thisConstructor.put(NAME, klass.getSimpleName());
+                thisConstructor.put(READABLENAME, splitCamelCase(klass.getSimpleName()));
+                thisConstructor.put(PARAMETERS, parseParameterTypes(constructor.getParameterTypes()));
+                thisConstructor.put(ANNOTATIONS, parseAnnotations(constructor.getDeclaredAnnotations()));
+                thisConstructor.put(EXCEPTIONS, parseExceptionTypes(constructor.getExceptionTypes()));
+                thisConstructor.put(USAGE, usage);
+                thisConstructor.put(WIKI_TEXT, usage.substring(2));
+
+                cConstructors.put(thisConstructor);
+            }
+        } catch (NoClassDefFoundError err) {
+            //intentionally ignore classes that cannot be found
+        }
+        return cConstructors;
+    }
+
+    private JSONArray getMethodsByReflection(Class klass) {
         JSONArray cMethods = new JSONArray();
-        JSONObject javaDocForClass = javadocForClass(klass.getName());
         try {
             Method[] methods = klass.getMethods();
             for (Method method : methods) {
-
-                // If method is in the ignore list and not overridden in the current class, ignore it
                 if (!METHODS_TO_IGNORE.contains(method.getName()) || method.getDeclaringClass().equals(klass)) {
 
                     String readableMethodName = splitCamelCase(method.getName());
-                    StringBuilder insertText = new StringBuilder();
+                    String usage = generateMethodUsageString(readableMethodName, method.getParameterTypes());
+                    String contextHelp = usage.substring(2)
+                            .replaceAll("\\| \\[(\\w+)] \\|", "&lt;$1&gt;")
+                            .replace("|", "")
+                            .trim();
+
                     JSONObject thisMethod = new JSONObject();
-                    thisMethod.put(NAME, readableMethodName);
 
-                    Class<?>[] parameters = method.getParameterTypes();
-                    int numberOfParams = parameters.length;
-                    if (numberOfParams > 0) {
-                        JSONArray params = new JSONArray();
-                        for (Class<?> param : parameters) {
-                            params.put(param.getSimpleName());
-                        }
-                        thisMethod.put(PARAMETERS, params);
-                    }
-
-                    if (method.getDeclaredAnnotations().length > 0) {
-                        JSONArray annotations = new JSONArray();
-                        for (Annotation a : method.getDeclaredAnnotations()) {
-                            annotations.put(a.annotationType().getSimpleName());
-                        }
-                        thisMethod.put(ANNOTATIONS, annotations);
-                    }
-
-                    String[] methodNameParts = readableMethodName.split(" ");
-                    int numberOfParts = methodNameParts.length;
-
-                    if (numberOfParams > numberOfParts) {
-                        insertText.append(readableMethodName)
-                                .append(" | ");
-                        for (Class<?> param : parameters) {
-                            insertText.append(param.getSimpleName())
-                                    .append(", ");
-                        }
-                        insertText.append(" |");
-                    } else {
-                        int totalCells = numberOfParts + numberOfParams;
-
-                        List<Integer> paramPositions = new ArrayList<>();
-                        int paramPosition = totalCells - 1;
-
-                        int n = 0;
-                        while (n < numberOfParams) {
-                            paramPositions.add(paramPosition);
-                            paramPosition -= 2;
-                            n++;
-                        }
-                        int prm = 0;
-                        for (int p = 0; p < totalCells; p++) {
-                            if (!paramPositions.contains(p)) {
-                                insertText.append(methodNameParts[p - prm])
-                                        .append(" ");
-                            } else {
-                                insertText.append("| ")
-                                        .append(parameters[prm].getSimpleName())
-                                        .append(" | ");
-                                prm++;
-                            }
-                        }
-                        if (numberOfParams == 0) {
-                            insertText.append("|");
-                        }
-                    }
-
-                    thisMethod.put(WIKI_TEXT, insertText.toString());
-
-                    if (javaDocForClass.has(method.getName()) && javaDocForClass.getJSONObject(method.getName()).length() > 0) {
-                        JSONObject javaDocForMethod = javaDocForClass.getJSONObject(method.getName());
-                        thisMethod.put(JAVADOC, javaDocForMethod);
-                    }
+                    thisMethod.put(NAME, splitCamelCase(method.getName()));
+                    thisMethod.put(READABLENAME, readableMethodName);
+                    thisMethod.put(PARAMETERS, parseParameterTypes(method.getParameterTypes()));
+                    thisMethod.put(EXCEPTIONS, parseExceptionTypes(method.getExceptionTypes()));
+                    thisMethod.put(ANNOTATIONS, parseAnnotations(method.getDeclaredAnnotations()));
+                    thisMethod.put(USAGE, usage);
+                    thisMethod.put(CONTEXT_STR, contextHelp);
+                    thisMethod.put(WIKI_TEXT, usage.substring(2));
 
                     cMethods.put(thisMethod);
                 }
@@ -262,6 +243,90 @@ public class AutoCompleteResponder extends WikiPageResponder {
             //intentionally ignore classes that cannot be found
         }
         return cMethods;
+    }
+
+    private JSONArray parseParameterTypes(Class<?>[] parameterTypes) {
+        JSONArray parameters = new JSONArray();
+        for (Class<?> p : parameterTypes) {
+            JSONObject thisParam = new JSONObject();
+            thisParam.put(TYPE, p.getSimpleName());
+            parameters.put(thisParam);
+        }
+        return parameters;
+    }
+
+    private JSONArray parseExceptionTypes(Class<?>[] exceptionTypes) {
+        JSONArray exceptions = new JSONArray();
+        for (Class<?> e : exceptionTypes) {
+            exceptions.put(e.getSimpleName());
+        }
+        return exceptions;
+    }
+
+    private JSONArray parseAnnotations(Annotation[] declaredAnnotations) {
+        JSONArray annotations = new JSONArray();
+        for (Annotation a : declaredAnnotations) {
+            annotations.put(a.annotationType().getSimpleName());
+        }
+        return annotations;
+    }
+
+    private static String generateConstructorUsageString(String name, Class<?>[] parameterTypes) {
+        StringBuilder wikiText = new StringBuilder("| ");
+        wikiText.append(splitCamelCase(name))
+                .append(" |");
+        for (Class<?> parameterType : parameterTypes) {
+            String paramDisplay = String.format(" [%s]", parameterType.getName());
+            wikiText.append(paramDisplay)
+                    .append(" |");
+        }
+        return wikiText.toString();
+    }
+
+    private String generateMethodUsageString(String readableMethodName, Class<?>[] parameterTypes) {
+        String[] methodNameParts = readableMethodName.split(" ");
+
+        int numberOfParts = methodNameParts.length;
+        int numberOfParams = parameterTypes.length;
+
+        StringBuilder result = new StringBuilder("| ");
+        if (numberOfParams > numberOfParts) {
+            result.append(readableMethodName)
+                    .append(" | ");
+            for (Class<?> param : parameterTypes) {
+                result.append(param.getSimpleName())
+                        .append(", ");
+            }
+            result.append(" |");
+        } else {
+            int totalCells = numberOfParts + numberOfParams;
+
+            List<Integer> paramPositions = new ArrayList<>();
+            int paramPosition = totalCells - 1;
+
+            int n = 0;
+            while (n < numberOfParams) {
+                paramPositions.add(paramPosition);
+                paramPosition -= 2;
+                n++;
+            }
+            int prm = 0;
+            for (int p = 0; p < totalCells; p++) {
+                if (!paramPositions.contains(p)) {
+                    result.append(methodNameParts[p - prm])
+                            .append(" ");
+                } else {
+                    result.append("| [")
+                            .append(parameterTypes[prm].getSimpleName())
+                            .append("] | ");
+                    prm++;
+                }
+            }
+            if (numberOfParams == 0) {
+                result.append("|");
+            }
+        }
+        return result.toString();
     }
 
     private void addPackage(Table t) {
@@ -282,7 +347,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
             for (String param : params) {
                 parameters.put(param);
                 textForAutocomplete = textForAutocomplete
-                        .replaceFirst(UNDERSCORE_PATTERN.pattern(), " | " + param + " |");
+                        .replaceFirst(UNDERSCORE_PATTERN.pattern(), " | [" + param + "] |");
             }
             if (!textForAutocomplete.endsWith("|")) {
                 textForAutocomplete += " |";
@@ -294,9 +359,15 @@ public class AutoCompleteResponder extends WikiPageResponder {
             scenarioName.append(readableName);
         } else {
             for (int col = 1; col < t.getColumnCountInRow(0); col++) {
-                insertText.append(" ")
-                        .append(t.getCellContents(col, 0))
-                        .append(" |");
+                insertText.append(" ");
+                if((col % 2) == 0) {
+                    insertText.append("[")
+                            .append(t.getCellContents(col, 0))
+                            .append("]");
+                } else {
+                    insertText.append(t.getCellContents(col, 0));
+                }
+                insertText.append(" |");
                 if ((col % 2) != 0) {
                     scenarioName.append(t.getCellContents(col, 0))
                             .append(" ");
@@ -306,8 +377,14 @@ public class AutoCompleteResponder extends WikiPageResponder {
             }
         }
 
-        thisScenario.put("name", scenarioName.toString());
+        String contextHelp = insertText.substring(2)
+                .replaceAll("\\| \\[(\\w+)] \\|", "&lt;$1&gt;")
+                .replace("|", "")
+                .trim();
+
+        thisScenario.put(NAME, scenarioName.toString());
         thisScenario.put(WIKI_TEXT, insertText.substring(2));
+        thisScenario.put(CONTEXT_STR, contextHelp);
         thisScenario.put("insertText", insertText.toString());
         thisScenario.put(PARAMETERS, parameters);
         thisScenario.put("html", tableToHtml(t));
@@ -343,7 +420,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
             }
         }
 
-        thisScenario.put("name", tplName);
+        thisScenario.put(NAME, tplName);
+        thisScenario.put(CONTEXT_STR, tplName);
         thisScenario.put(WIKI_TEXT, insertText.substring(2));
         thisScenario.put("insertText", insertText.toString());
         thisScenario.put(PARAMETERS, parameters);
@@ -454,15 +532,16 @@ public class AutoCompleteResponder extends WikiPageResponder {
         ).toLowerCase();
     }
 
-    private JSONObject javadocForClass(String className) {
-        StringBuilder sb = new StringBuilder();
-        try (Stream<String> stream = Files.lines(Paths.get(APIDOCS_FOLDER + File.separator + className + ".json"), StandardCharsets.UTF_8)) {
-            stream.forEach(s -> sb.append(s).append("\n"));
-        } catch (IOException e) {
+    private JSONObject javadocForClass(Class klass) {
+        String javadoc = "";
+        try (InputStream stream = klass.getClassLoader().getResourceAsStream(APIDOCS_LOCATION + klass.getName() + ".json")) {
+            javadoc = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).lines()
+                    .collect(Collectors.joining(System.lineSeparator()));
+        } catch (Exception e) {
             //Ignore missing documentation
         }
-        if (!sb.toString().isEmpty()) {
-            return new JSONObject(sb.toString());
+        if (!javadoc.isEmpty()) {
+            return new JSONObject(javadoc);
         } else {
             return new JSONObject();
         }
