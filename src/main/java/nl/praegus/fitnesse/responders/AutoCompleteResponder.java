@@ -106,7 +106,10 @@ public class AutoCompleteResponder extends WikiPageResponder {
             Table t = scanner.getTable(i);
             switch (t.getCellContents(0, 0).toLowerCase()) {
                 case "import":
-                    addPackage(t);
+                    addPackage(t, false);
+                    break;
+                case "library":
+                    addPackage(t, true);
                     break;
                 case "scenario":
                     addScenario(t);
@@ -329,9 +332,13 @@ public class AutoCompleteResponder extends WikiPageResponder {
         return result.toString();
     }
 
-    private void addPackage(Table t) {
+    private void addPackage(Table t, boolean library) {
         for (int row = 1; row < t.getRowCount(); row++) {
-            packages.add(t.getCellContents(0, row));
+            String pkg = t.getCellContents(0, row);
+            if (library && pkg.contains(".")) {
+                pkg = pkg.substring(0, pkg.lastIndexOf("."));
+            }
+            packages.add(pkg);
         }
     }
 
@@ -360,7 +367,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
         } else {
             for (int col = 1; col < t.getColumnCountInRow(0); col++) {
                 insertText.append(" ");
-                if((col % 2) == 0) {
+                if ((col % 2) == 0) {
                     insertText.append("[")
                             .append(t.getCellContents(col, 0))
                             .append("]");
