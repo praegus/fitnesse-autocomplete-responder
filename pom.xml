@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.tcnh</groupId>
+    <groupId>nl.praegus</groupId>
     <artifactId>fitnesse-autocomplete-responder</artifactId>
-    <version>1.0.13-SNAPSHOT</version>
-    <url>https://github.com/tcnh/FitNesseAutocompleteResponder</url>
+    <version>1.0.15-SNAPSHOT</version>
+    <url>https://gitlab.com/praegus/toolchain-fixtures/fitnesse-autocomplete-responder</url>
     <name>AutoComplete responder for FitNesse</name>
     <description>Returns context-aware json with fixture methods, scenario's and slim symbols in scope</description>
 
@@ -25,19 +25,31 @@
             <organization>Praegus B.V.</organization>
             <organizationUrl>http://www.praegus.nl</organizationUrl>
         </developer>
+        <developer>
+            <name>Maarten-Jan van Gool</name>
+            <email>maarten-jan.van.gool@praegus.nl</email>
+            <organization>Praegus B.V.</organization>
+            <organizationUrl>http://www.praegus.nl</organizationUrl>
+        </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:tcnh/FitNesseAutocompleteResponder.git</connection>
-        <url>https://github.com/tcnh/FitNesseAutocompleteResponder.git</url>
-        <developerConnection>scm:git:git@github.com:tcnh/FitNesseAutocompleteResponder.git</developerConnection>
-      <tag>HEAD</tag>
-  </scm>
+        <connection>scm:git@gitlab.com:praegus/toolchain-fixtures/fitnesse-autocomplete-responder.git</connection>
+        <url>https://gitlab.com/praegus/toolchain-fixtures/fitnesse-autocomplete-responder.git</url>
+        <developerConnection>scm:git@gitlab.com:praegus/toolchain-fixtures/fitnesse-autocomplete-responder.git
+        </developerConnection>
+        <tag>HEAD</tag>
+    </scm>
     <dependencies>
         <dependency>
             <groupId>org.fitnesse</groupId>
             <artifactId>fitnesse</artifactId>
             <version>20190508</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180813</version>
         </dependency>
     </dependencies>
     <build>
@@ -45,7 +57,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.8.1</version>
                 <configuration>
                     <source>8</source>
                     <target>8</target>
@@ -75,9 +87,30 @@
                 <configuration>
                     <serverId>staging</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
-                <goals>deploy</goals>
+                <goals>
+                    <goal>deploy</goal>
+                </goals>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-code-coverage-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -102,7 +135,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.10.3</version>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
