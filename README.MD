@@ -1,4 +1,4 @@
- [![Maven Central](https://img.shields.io/maven-central/v/nl.praegus/fitnesse-autocomplete-responder.svg?maxAge=21600)](https://mvnrepository.com/artifact/com.github.tcnh/fitnesse-autocomplete-responder)
+[![Maven Central](https://img.shields.io/maven-central/v/nl.praegus/fitnesse-autocomplete-responder.svg?maxAge=21600)](https://mvnrepository.com/artifact/nl.praegus/fitnesse-autocomplete-responder)
 # Autocomplete responder
 This responder returns a json containing all imported classes in a fitnesse context and their public methods and parameter types.
 Also returns scenario's on page if these are present. Scenario's are de-camelcased and parameters are also provided.
