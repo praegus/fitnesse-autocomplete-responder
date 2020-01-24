@@ -112,6 +112,8 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     addPackage(t, true);
                     break;
                 case "scenario":
+                case "looping scenario":
+                case "conditional scenario":
                     addScenario(t);
                     break;
                 case "table template":
