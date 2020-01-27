@@ -36,15 +36,14 @@
     <scm>
         <connection>scm:git@github.com:praegus/fitnesse-autocomplete-responder.git</connection>
         <url>https://github.com/praegus/fitnesse-autocomplete-responder.git</url>
-        <developerConnection>scm:git@github.com:praegus/fitnesse-autocomplete-responder.git
-        </developerConnection>
+        <developerConnection>scm:git@github.com:praegus/fitnesse-autocomplete-responder.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
     <dependencies>
         <dependency>
             <groupId>org.fitnesse</groupId>
             <artifactId>fitnesse</artifactId>
-            <version>20190716</version>
+            <version>20200108</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
