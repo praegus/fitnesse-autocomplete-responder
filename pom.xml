@@ -4,7 +4,7 @@
 
     <groupId>nl.praegus</groupId>
     <artifactId>fitnesse-autocomplete-responder</artifactId>
-    <version>1.0.16-SNAPSHOT</version>
+    <version>1.0.16</version>
     <url>https://github.com/praegus/fitnesse-autocomplete-responder</url>
     <name>AutoComplete responder for FitNesse</name>
     <description>Returns context-aware json with fixture methods, scenario's and slim symbols in scope</description>
@@ -37,7 +37,7 @@
         <connection>scm:git:git@github.com:praegus/fitnesse-autocomplete-responder.git</connection>
         <url>https://github.com/praegus/fitnesse-autocomplete-responder.git</url>
         <developerConnection>scm:git:git@github.com:praegus/fitnesse-autocomplete-responder.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>fitnesse-autocomplete-responder-1.0.16</tag>
     </scm>
     <dependencies>
         <dependency>
