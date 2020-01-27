@@ -34,9 +34,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git@github.com:praegus/fitnesse-autocomplete-responder.git</connection>
+        <connection>scm:git:git@github.com:praegus/fitnesse-autocomplete-responder.git</connection>
         <url>https://github.com/praegus/fitnesse-autocomplete-responder.git</url>
-        <developerConnection>scm:git@github.com:praegus/fitnesse-autocomplete-responder.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:praegus/fitnesse-autocomplete-responder.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
     <dependencies>
