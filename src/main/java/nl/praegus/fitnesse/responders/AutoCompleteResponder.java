@@ -104,26 +104,28 @@ public class AutoCompleteResponder extends WikiPageResponder {
         TableScanner scanner = new HtmlTableScanner(makeHtml(context, page));
         for (int i = 0; i < scanner.getTableCount(); i++) {
             Table t = scanner.getTable(i);
-            switch (t.getCellContents(0, 0).toLowerCase()) {
-                case "import":
-                    addPackage(t, false);
-                    break;
-                case "library":
-                    addPackage(t, true);
-                    break;
-                case "scenario":
-                case "looping scenario":
-                case "conditional scenario":
-                    addScenario(t);
-                    break;
-                case "table template":
-                    addTableTemplate(t);
-                    break;
-                default:
-                    //Skip!
-                    break;
+            if (t.getColumnCountInRow(0) > 0) {
+                switch (t.getCellContents(0, 0).toLowerCase()) {
+                    case "import":
+                        addPackage(t, false);
+                        break;
+                    case "library":
+                        addPackage(t, true);
+                        break;
+                    case "scenario":
+                    case "looping scenario":
+                    case "conditional scenario":
+                        addScenario(t);
+                        break;
+                    case "table template":
+                        addTableTemplate(t);
+                        break;
+                    default:
+                        //Skip!
+                        break;
+                }
+                addVariables(t);
             }
-            addVariables(t);
         }
 
         addClassesToAutocompleteList();
