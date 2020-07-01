@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -33,7 +34,7 @@ public class ClassFinder {
 
         while (resources.hasMoreElements()) {
             URL resource = (URL) resources.nextElement();
-            dirs.add(new File(resource.getFile()));
+            dirs.add(new File(URLDecoder.decode(resource.getFile(), "utf-8")));
         }
         List<Class> classes = new ArrayList<>();
         for (File directory : dirs) {

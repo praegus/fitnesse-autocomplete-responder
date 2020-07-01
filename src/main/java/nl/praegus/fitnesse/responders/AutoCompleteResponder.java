@@ -504,24 +504,29 @@ public class AutoCompleteResponder extends WikiPageResponder {
     }
 
     private void setClassPathsForPage() {
+
         WikiTestPage testPage = new WikiTestPage(page);
-        ClassPath classPath = testPage.getClassPath();
+        try {
+            ClassPath classPath = testPage.getClassPath();
 
-        URL[] urls = new URL[classPath.getElements().size()];
+            URL[] urls = new URL[classPath.getElements().size()];
 
-        int i = 0;
-        for (String path : classPath.getElements()) {
-            File classPathItem = new File(path);
-            try {
-                urls[i] = classPathItem.toURI().toURL();
-            } catch (MalformedURLException e) {
-                //this shouldn't happen!
-                LOGGER.error(e.getMessage());
+            int i = 0;
+            for (String path : classPath.getElements()) {
+                File classPathItem = new File(path);
+                try {
+                    urls[i] = classPathItem.toURI().toURL();
+                } catch (MalformedURLException e) {
+                    //this shouldn't happen!
+                    LOGGER.error(e.getMessage());
+                }
+                i++;
             }
-            i++;
-        }
+            addToClassPath(urls);
 
-        addToClassPath(urls);
+        } catch (NullPointerException e) {
+            // Silently continue when there are no classpaths (new page)
+        }
     }
 
     private void addToClassPath(URL[] urls) {
