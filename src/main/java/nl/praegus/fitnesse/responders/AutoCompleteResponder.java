@@ -60,6 +60,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private static final String WIKI_TEXT = "wikiText";
     private static final String USAGE = "usage";
     private static final String CONTEXT_STR = "contexthelp";
+    private static final String INTERPOSING_SYSPROP = "interposeMethodsInWiki";
 
 
     static {
@@ -226,7 +227,13 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 if (!METHODS_TO_IGNORE.contains(method.getName()) || method.getDeclaringClass().equals(klass)) {
 
                     String readableMethodName = splitCamelCase(method.getName());
-                    String usage = generateMethodUsageString(readableMethodName, method.getParameterTypes());
+                    String usage;
+
+                    if(System.getProperty(INTERPOSING_SYSPROP).equalsIgnoreCase("true")) {
+                        usage = interposingNotationUsageString(method.getName(), method.getParameterTypes());
+                    } else {
+                        usage = generateMethodUsageString(readableMethodName, method.getParameterTypes());
+                    }
                     String contextHelp = usage.substring(2)
                             .replaceAll("\\| \\[(\\w+)] \\|", "&lt;$1&gt;")
                             .replace("|", "")
@@ -334,6 +341,19 @@ public class AutoCompleteResponder extends WikiPageResponder {
             }
         }
         return result.toString();
+    }
+
+    private String interposingNotationUsageString(String methodName, Class<?>[] parameterTypes) {
+        StringBuilder wikiText = new StringBuilder("| ");
+        wikiText.append(methodName)
+                .append("; |");
+        for (Class<?> parameterType : parameterTypes) {
+            String paramDisplay = String.format(" [%s]", parameterType.getName());
+            wikiText.append(paramDisplay)
+                    .append(" |");
+        }
+
+        return wikiText.toString();
     }
 
     private void addPackage(Table t, boolean library) {
