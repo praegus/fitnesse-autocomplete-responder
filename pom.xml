@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.fitnesse</groupId>
             <artifactId>fitnesse</artifactId>
-            <version>20200108</version>
+            <version>20200501</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
