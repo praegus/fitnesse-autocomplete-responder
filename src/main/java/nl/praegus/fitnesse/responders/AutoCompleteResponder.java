@@ -229,7 +229,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     String readableMethodName = splitCamelCase(method.getName());
                     String usage;
 
-                    if(System.getProperty(INTERPOSING_SYSPROP).equalsIgnoreCase("true")) {
+                    if(System.getProperty(INTERPOSING_SYSPROP, "false").equalsIgnoreCase("true")) {
                         usage = interposingNotationUsageString(method.getName(), method.getParameterTypes());
                     } else {
                         usage = generateMethodUsageString(readableMethodName, method.getParameterTypes());

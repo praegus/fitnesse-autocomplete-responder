@@ -29,11 +29,11 @@ public class ClassFinder {
             throws ClassNotFoundException, IOException {
 
         String path = packageName.replace('.', '/');
-        Enumeration resources = classLoader.getResources(path);
+        Enumeration<URL> resources = classLoader.getResources(path);
         List<File> dirs = new ArrayList<>();
 
         while (resources.hasMoreElements()) {
-            URL resource = (URL) resources.nextElement();
+            URL resource = resources.nextElement();
             dirs.add(new File(URLDecoder.decode(resource.getFile(), "utf-8")));
         }
         List<Class> classes = new ArrayList<>();
