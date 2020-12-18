@@ -7,6 +7,7 @@ import fitnesse.http.SimpleResponse;
 import fitnesse.responders.WikiPageResponder;
 import fitnesse.testrunner.WikiTestPage;
 import fitnesse.testsystems.ClassPath;
+import fitnesse.testsystems.slim.HtmlTable;
 import fitnesse.testsystems.slim.HtmlTableScanner;
 import fitnesse.testsystems.slim.Table;
 import fitnesse.testsystems.slim.TableScanner;
@@ -52,7 +53,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private static final Set<String> METHODS_TO_IGNORE;
     private static final String TDEND = "</td>";
     private static final String NAME = "name";
-    private static final String READABLENAME = "readableName";
+    private static final String READABLE_NAME = "readableName";
     private static final String TYPE = "type";
     private static final String EXCEPTIONS = "exceptions";
     private static final String ANNOTATIONS = "annotations";
@@ -75,19 +76,19 @@ public class AutoCompleteResponder extends WikiPageResponder {
         METHODS_TO_IGNORE.add("hashCode");
     }
 
-    private JSONObject json = new JSONObject();
-    private JSONArray classes = new JSONArray();
-    private JSONArray scenarios = new JSONArray();
-    private Set<String> packages = new HashSet<>();
-    private JSONArray variables = new JSONArray();
+    private final JSONObject json = new JSONObject();
+    private final JSONArray classes = new JSONArray();
+    private final JSONArray scenarios = new JSONArray();
+    private final Set<String> packages = new HashSet<>();
+    private final JSONArray variables = new JSONArray();
     private WikiPage page;
     private FitNesseContext context;
     private URLClassLoader classLoader;
-    private Map<String, Table> tableTemplateTables = new HashMap<>();
+    private final Map<String, Table> tableTemplateTables = new HashMap<>();
 
     @Override
-    public Response makeResponse(FitNesseContext pagecontext, Request request) throws Exception {
-        context = pagecontext;
+    public Response makeResponse(FitNesseContext pageContext, Request request) throws Exception {
+        context = pageContext;
         page = loadPage(context, request.getResource(), request.getMap());
         setClassPathsForPage();
         getAutoCompleteDataFromPage();
@@ -102,7 +103,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
     }
 
     private void getAutoCompleteDataFromPage() {
-        TableScanner scanner = new HtmlTableScanner(makeHtml(context, page));
+        TableScanner<HtmlTable> scanner = new HtmlTableScanner(makeHtml(context, page));
         for (int i = 0; i < scanner.getTableCount(); i++) {
             Table t = scanner.getTable(i);
             if (t.getColumnCountInRow(0) > 0) {
@@ -204,7 +205,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                 JSONObject thisConstructor = new JSONObject();
 
                 thisConstructor.put(NAME, klass.getSimpleName());
-                thisConstructor.put(READABLENAME, splitCamelCase(klass.getSimpleName()));
+                thisConstructor.put(READABLE_NAME, splitCamelCase(klass.getSimpleName()));
                 thisConstructor.put(PARAMETERS, parseParameterTypes(constructor.getParameterTypes()));
                 thisConstructor.put(ANNOTATIONS, parseAnnotations(constructor.getDeclaredAnnotations()));
                 thisConstructor.put(EXCEPTIONS, parseExceptionTypes(constructor.getExceptionTypes()));
@@ -242,7 +243,7 @@ public class AutoCompleteResponder extends WikiPageResponder {
                     JSONObject thisMethod = new JSONObject();
 
                     thisMethod.put(NAME, splitCamelCase(method.getName()));
-                    thisMethod.put(READABLENAME, readableMethodName);
+                    thisMethod.put(READABLE_NAME, readableMethodName);
                     thisMethod.put(PARAMETERS, parseParameterTypes(method.getParameterTypes()));
                     thisMethod.put(EXCEPTIONS, parseExceptionTypes(method.getExceptionTypes()));
                     thisMethod.put(ANNOTATIONS, parseAnnotations(method.getDeclaredAnnotations()));
@@ -359,14 +360,20 @@ public class AutoCompleteResponder extends WikiPageResponder {
     private void addPackage(Table t, boolean library) {
         for (int row = 1; row < t.getRowCount(); row++) {
             String pkg = t.getCellContents(0, row);
-            if (library && pkg.contains(".")) {
-                pkg = pkg.substring(0, pkg.lastIndexOf("."));
+            if(!library) {
+                packages.add(pkg);
             }
-            packages.add(pkg);
+            if (library && pkg.contains(".")) {
+                packages.add(pkg.substring(0, pkg.lastIndexOf(".")));
+            }
         }
     }
 
     private void addScenario(Table t) {
+        if(t.getColumnCountInRow(0) == 1) {
+            return; //Invalid scenario table
+        }
+
         StringBuilder scenarioName = new StringBuilder();
         StringBuilder insertText = new StringBuilder("|");
         JSONObject thisScenario = new JSONObject();
@@ -423,7 +430,9 @@ public class AutoCompleteResponder extends WikiPageResponder {
     }
 
     private void addTableTemplate(Table t) {
-
+        if(t.getColumnCountInRow(0) == 1) {
+            return; //Invalid table template
+        }
         StringBuilder insertText = new StringBuilder("|");
         JSONObject thisScenario = new JSONObject();
         JSONArray parameters = new JSONArray();
